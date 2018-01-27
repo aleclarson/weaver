@@ -83,7 +83,7 @@ function Preloader() {
 
   function loadItem(item) {
     const {inst} = item
-    let {src, node} = inst
+    let {url, node} = inst
 
     // Temporary nodes are removed once loaded.
     const temp = !node
@@ -91,21 +91,18 @@ function Preloader() {
       inst.abort = noop
       if (temp) item.destroy()
       loading.splice(loading.indexOf(item), 1)
-
-      // Call the appropriate listener, if one exists.
-      const hook = item['on' + evt.type]
-      if (hook) hook.call(item, evt)
-
+      if (inst.done) inst.done(evt.type == 'load')
       loadNext()
     }
 
-    if (imgRE.test(src)) {
+    if (imgRE.test(url)) {
       if (temp) {
         inst.node = node = new Image()
       }
-      node.src = src
+      node.src = url
       if (node.complete && node.naturalHeight) {
         inst.abort = noop
+        if (inst.done) inst.done(true)
         return
       }
       node.addEventListener('load', listener)
@@ -115,7 +112,7 @@ function Preloader() {
         container.appendChild(node)
       }
     } else {
-      throw Error('Cannot preload URL: ' + item.src)
+      throw Error('Cannot preload URL: ' + url)
     }
 
     inst.abort = () => {
@@ -125,7 +122,6 @@ function Preloader() {
       loadNext()
     }
 
-    item.abort = abort
     loading.push(item)
   }
 
