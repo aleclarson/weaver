@@ -1,4 +1,10 @@
 {
   "name": "weaver",
-  "version": "0.0.2"
+  "version": "1.0.0",
+  "devDependencies": {
+    "testpass": "^0.5.1"
+  },
+  "dependencies": {
+    "noop": "aleclarson/noop#0.0.1"
+  }
 }

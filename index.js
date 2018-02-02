@@ -1,4 +1,13 @@
-// TODO: Add JSON loading support
-// TODO: Prevent loading if critical animation is active
+const Weaver = require('./lib/Weaver')
 
-module.exports = require('./preloader')
+// The main weaver.
+const main = Weaver()
+module.exports = main
+
+// High priority
+const high = main.queue(1000)
+main.high = high.push
+
+// Low priority
+const low = main.queue(100)
+main.low = low.push
