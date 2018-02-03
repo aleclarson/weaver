@@ -1,4 +1,4 @@
-const main = require('.')
+const main = require('./index')
 
 // High priority
 const high = main.queue(2000)
