@@ -1,8 +1,6 @@
 const ImagePool = require('./lib/ImagePool')
 const noop = require('noop')
 
-// TODO: Avoid cancelling until `cancel` calls equal `load` calls.
-
 const pool = ImagePool()
 const tasks = Object.create(null)
 
