@@ -5,14 +5,17 @@ const Weaver = require('./lib/Weaver')
 const utils = require('./lib/utils')
 const main = require('.')
 
-function delay(fn = noop) {
+global.__DEV__ = true
+
+function delay(fn = noop, ms) {
   return new Promise((resolve, reject) =>
     setTimeout(() => {
-      try {fn(), resolve()}
-      catch(e) {
+      try {
+        resolve(fn())
+      } catch(e) {
         return reject(e)
       }
-    })
+    }, ms)
   );
 }
 
@@ -25,31 +28,81 @@ tp.group('queues:', (t) => {
       t.eq(calls, ['high', 'low'])
     })
   })
-  tp.test('nesting within equal priority queues is unsafe', (t) => {
+  tp.test('flushing stops early if a higher priority queue is added to', (t) => {
+    const calls = []
+    main.low(() => {
+      calls.push('low')
+      main.high(() => calls.push('high'))
+    })
+    main.low(() => calls.push('low'))
+    return delay(() => {
+      t.eq(calls, ['low'])
+      return delay(() => {
+        t.eq(calls, ['low', 'high', 'low'])
+      })
+    })
+  })
+  tp.test('flushing won\'t stop early until all async functions are done', (t) => {
+    const calls = []
+    main.low(done => {
+      calls.push('async low')
+      setTimeout(done)
+    })
+    main.low(() => {
+      calls.push('low')
+      main.high(() => calls.push('high'))
+    })
+    return delay(() => {
+      const expected = ['async low', 'low']
+      t.eq(calls, expected)
+      return delay(() => {
+        t.eq(calls, expected)
+        return delay(() => {
+          expected.push('high')
+          t.eq(calls, expected)
+        })
+      })
+    })
+  })
+  tp.test('equal priority queues make nesting harder to predict', (t) => {
     const weaver = Weaver()
     const foo = weaver.queue(1)
     const bar = weaver.queue(1)
 
-    // If the queues are added to in the order they were created,
-    // the nested function is called during the same cycle.
-    let x = 0
-    foo.push(() => {
-      x++
-      bar.push(() => x++)
-    })
+    // `x` tracks foo calls
+    // `y` tracks bar calls
+    let x = 0, y = 0
 
-    // Otherwise, the nested function is called in the next cycle.
-    let y = 0
+    // This won't run until the 2nd tick.
     bar.push(() => {
       y++
-      foo.push(() => y++)
+      // This causes the 2nd flush to stop early.
+      foo.push(() => {
+        // This won't run until the 3rd tick.
+        x++
+      })
+    })
+
+    // This runs during the 1st tick.
+    foo.push(() => {
+      x++
+      // This causes the 1st flush to stop early.
+      bar.push(() => {
+        // This won't run until the 3rd tick.
+        y++
+      })
     })
 
     return delay(() => {
-      t.eq(x, 2)
-      t.eq(y, 1)
+      t.eq(x, 1)
+      t.eq(y, 0)
       return delay(() => {
-        t.eq(y, 2)
+        t.eq(x, 1)
+        t.eq(y, 1)
+        return delay(() => {
+          t.eq(x, 2)
+          t.eq(y, 2)
+        })
       })
     })
   })
