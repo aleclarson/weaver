@@ -1,5 +1,5 @@
 
-# weaver v1.0.1
+# weaver v1.1.0
 
 Priority-based task queues.
 
