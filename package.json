@@ -1,6 +1,6 @@
 {
   "name": "weaver",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "devDependencies": {
     "testpass": "^0.5.1"
   },
